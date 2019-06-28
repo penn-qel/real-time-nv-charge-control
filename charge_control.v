@@ -3,34 +3,31 @@
 
 module charge_control #
 (
-		// Define the portss here
-    input wire  S_AXI_ACLK,// Global Clock Signal
-    input [13:0] signal_in, // read in control lines form the AWG
-    output reg [14:0] awg_out, // output lines for the event trigger and recording data
-        		
-		
-                
-    // Create some internal registers for keeping track of stuff
-    reg[31:0] threshold_0, threshold_1;
-    reg[8:0] counts, seq_pos;
-    reg count_on_flag;
-    reg count_reset;
-    reg was_counting;
-      
-    // Initialize the registers at start up  
-    initial begin
-          awg_out <= 15'b0;
+	// Define the ports
+	input wire  S_AXI_ACLK,// Global Clock Signal
+	input [13:0] signal_in, // read in control lines form the AWG
+	output reg [14:0] awg_out, // output lines for the event trigger and recording data
 
-          counts <= 8'b0;
-          seq_pos <= 8'b0;
-          count_on_flag <= 0;
-          was_counting <= 0;
-          threshold_0 <= 32'b1;
-          threshold_1 <= 32'b10;
-          threshold_0 <= signal_in[8:7];
-          threshold_1 <= signal_in[10:8];
+	// Create some internal registers for keeping track of stuff
+	reg[31:0] threshold_0, threshold_1;
+	reg[8:0] counts, seq_pos;
+	reg count_on_flag;
+	reg count_reset;
+	reg was_counting;
 
-          end
+	// Initialize the registers at start up  
+	initial begin
+		awg_out <= 15'b0;
+		counts <= 8'b0;
+		seq_pos <= 8'b0;
+		count_on_flag <= 0;
+		was_counting <= 0;
+		threshold_0 <= 32'b1;
+		threshold_1 <= 32'b10;
+		threshold_0 <= signal_in[8:7];
+		threshold_1 <= signal_in[10:8];
+
+	end
               // Some look up tables for keeping track of bits and their purpose
               //
               // signal_in[0] is the enable signal
