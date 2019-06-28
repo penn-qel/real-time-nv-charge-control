@@ -1,8 +1,8 @@
 
 `timescale 1 ns / 1 ps
 
-	module charge_control #
-	(
+module charge_control #
+(
 		// Define the portss here
     input wire  S_AXI_ACLK,// Global Clock Signal
     input [13:0] signal_in, // read in control lines form the AWG
@@ -49,71 +49,71 @@
               //awg_out[12:8] is for the sequence position (32 lines supported)
               
               
-              // ****Control Module****
-              //
-              // control status is updated every global clock cycle
-              always @(posedge S_AXI_ACLK) begin
+	// ****Control Module****
+	//
+	// control status is updated every global clock cycle
+	always @(posedge S_AXI_ACLK) begin
 
-                  // Enter the active loop    
-                  if(signal_in[0]) begin
-                      //enable signal turned on start updating controls
-                      
-                      threshold_0 <= signal_in[8:7];
-                      threshold_1 <= signal_in[10:9];
+		// Enter the active loop    
+		if(signal_in[0]) begin
+			//enable signal turned on start updating controls
 
-                      // count_on enabled. FPGA should start counting
-                      if(signal_in[2]) begin
-                         was_counting <= 1;
-                         count_on_flag <= 1;
-                         
-                         // Continuously update the output register with the number of counts
-                         // The DAQ won't sample these until the measurement has completed
-                         awg_out[8:3] <= counts[5:0]; // Update the output count register with the value
-                         awg_out[14:9] <= seq_pos[5:0]; // Update the current measured sequence position
+			threshold_0 <= signal_in[8:7];
+			threshold_1 <= signal_in[10:9];
 
-                         
-                         // Check to see if the counts have exceeded the specificed threshold and
-                         // we are supposed to be initializing.
-                         // If so, trigger the AWG on the specified output line.
-                         if(counts >= threshold_0 && !signal_in[4] && !signal_in[5]) begin
-                              awg_out[2] <= 1; // Trigger the AWG
-                          end 
-                      end
-                  end    
+			// count_on enabled. FPGA should start counting
+			if(signal_in[2]) begin
+				was_counting <= 1;
+				count_on_flag <= 1;
+
+				// Continuously update the output register with the number of counts
+				// The DAQ won't sample these until the measurement has completed
+				awg_out[8:3] <= counts[5:0]; // Update the output count register with the value
+				awg_out[14:9] <= seq_pos[5:0]; // Update the current measured sequence position
+
+			// Check to see if the counts have exceeded the specificed threshold and
+			// we are supposed to be initializing.
+			// If so, trigger the AWG on the specified output line.
+			if(counts >= threshold_0 && !signal_in[4] && !signal_in[5]) begin
+				awg_out[2] <= 1; // Trigger the AWG
+			end 
+			end
+		end    
 
 
-                  // Reset signal detected
-                  if(signal_in[1]) begin 
-                      awg_out <= 15'b0;
-                      count_on_flag <= 0;
-                  end
+		// Reset signal detected
+		if(signal_in[1]) begin 
+			awg_out <= 15'b0;
+			count_on_flag <= 0;
+		end
 
-                  end  
+	  end  
+
+	// ****Photon Counting Module****
+	always @(posedge signal_in[3] or posedge signal_in[1]) begin
+
+		// the reset of the counter must occur in the module
+		if(signal_in[1]) begin //count reset
+			counts <= 8'b0;
+		end    
+
+		// If the control flags sigal counting, increment on every positive edge
+		else if(signal_in[0] && signal_in[2]) begin
+		    counts <= counts + 1;
+		 end
+	end 
                 
-                // ****Photon Counting Module****
-                always @(posedge signal_in[3] or posedge signal_in[1]) begin
-                  
-                    // the reset of the counter must occur in the module
-                    if(signal_in[1]) begin //count reset
-                        counts <= 8'b0;
-                        //slv_reg0 <= 32'b0;
-                    end    
-                    // If the control flags sigal counting, increment on every positive edge
-                    else if(signal_in[0] && signal_in[2]) begin
-                            counts <= counts + 1;
-                         end
-                end 
-                
-                // ****Sequence Line Counting Module****
-                always @(posedge signal_in[6] or posedge signal_in[1]) begin
-                
-                    // the reset of the counter must occur in the module
-                    if(signal_in[1]) begin //count reset
-                        seq_pos <= 8'b0;
-                    end  
-                    // If the control flags sigal counting, increment on every positive edge
-                    else if(signal_in[0] && !signal_in[2]) begin
-                        seq_pos <= seq_pos + 1;
-                    end
-                end
+	// ****Sequence Line Counting Module****
+	always @(posedge signal_in[6] or posedge signal_in[1]) begin
+
+		// the reset of the counter must occur in the module
+		if(signal_in[1]) begin //count reset
+			seq_pos <= 8'b0;
+		end 
+
+		// If the control flags sigal counting, increment on every positive edge
+		else if(signal_in[0] && !signal_in[2]) begin
+			seq_pos <= seq_pos + 1;
+		end
+	end
 endmodule
